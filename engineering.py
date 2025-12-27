@@ -71,9 +71,15 @@ def load_sales(year):
     os.chdir(herepath)
     return sales.select(relevant_cols)
 
+def load_reliability(year):
+    pass
+
 def load_all_sales():
     dfs = [load_sales(year) for year in range(2010, 2025)]
     return pl.concat(dfs, how = 'vertical')
+
+def load_all_reliability():
+    pass
 
 def main():
     all_sales = load_all_sales()
