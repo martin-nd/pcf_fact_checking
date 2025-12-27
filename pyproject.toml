@@ -1,0 +1,14 @@
+[project]
+name = "pcf-fact-checking"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastexcel>=0.18.0",
+    "openpyxl>=3.1.5",
+    "pandas>=2.3.3",
+    "polars>=1.36.1",
+    "pyarrow>=22.0.0",
+    "xlsxwriter>=3.2.9",
+]
