@@ -23,6 +23,7 @@ library(geomtextpath)
 library(reshape2)
 library(htmltools)
 library(stringr)
+library(gt)
 
 reliability = read_xlsx('data/all_reliability.xlsx')
 sales = read_xlsx('data/all_sales.xlsx')
@@ -141,10 +142,111 @@ ggplot(rel_ca_2024_melted, aes(x = '', y = value)) +
   )
 ```
 
-It would seem that SDGE has successfully managed to reduce the average number of outages per customer, but unfortunately those outages are still longer and larger than average for CA. It should be noted that SDGE is not only below average, but also seems to struggle to stay within the IQR.
+It would seem that SDGE has successfully managed to reduce the average number of outages per customer, but unfortunately those outages are still longer and larger than average for CA.
 
-Let's now observe how SDGE compares to the average through the years.
+Let's now observe how SDGE compares to the CA median through the years.
 
 ```{r}
+mycolors = c('#a1a1a0', '#001980')
 
+rel_ca_averages = reliability %>%
+  filter(state == 'CA') %>%
+  melt(
+    id.vars = c('data_year', 'utility_name'), 
+    measure.vars = c('saifi', 'saidi', 'caidi'),
+    variable.name = 'metric'
+  ) %>%
+  group_by(data_year, metric) %>%
+  summarize(
+    value = median(value, na.rm = TRUE)
+  )
+
+rel_ca_averages$utility_name = 'CA Median'
+rel_ca_averages = rel_ca_averages %>%
+  select(
+    data_year,
+    utility_name,
+    metric,
+    value
+  )
+
+sdge = reliability %>%
+  filter(
+    state == 'CA',
+    str_count(utility_name, 'San Diego') > 0
+  ) %>%
+  melt(
+    id.vars = c('data_year', 'utility_name'),
+    measure.vars = c('saifi', 'saidi', 'caidi'),
+    variable.name = 'metric'
+  )
+
+sdge$utility_name = 'SDGE'
+
+ts_df = rbind(
+    rel_ca_averages,
+    sdge
+  ) %>%
+  mutate(
+    metric = str_to_upper(metric)
+  )
+
+ggplot(
+    ts_df, 
+    aes(
+      x = data_year, y = value, 
+      color = utility_name, group = utility_name
+    )
+  ) +
+  geom_textline(aes(label = utility_name), hjust = 0.3) +
+  facet_grid(metric ~ ., scales = 'free_y') +
+  theme_minimal() +
+  labs(
+    title = 'SDGE vs CA Median',
+    subtitle = 'USEIA 2013-2024 Data',
+    x = '',
+    y = ''
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 90),
+    legend.position = 'none'
+  ) +
+  scale_color_manual(values = mycolors)
 ```
+
+Interesting, this tells us a very different story. I know now why PCF picked 2020 as their data year and has not updated it. We can see clearly that SDGE usually performs better than average on SAIFI, is about average on SAIDI, and performs a bit worse than average on CAIDI. In other words, SDGE usually has fewer outages per customer than median, about average outage duration per customer, and slightly worse than average outage duration per outage. If one were to be an SDGE customer, one could expect fewer outages than normal, but those outages may last longer than usual.
+
+Before we move on to the next claim, let's do some easy statistical tests.
+
+First, let's examine if there is a statistically meaningful difference in year-over-year reliability metrics between SDGE & the CA median.
+
+```{r}
+sdge_saidi = sdge %>% filter(metric == 'saidi')
+sdge_saifi = sdge %>% filter(metric == 'saifi')
+sdge_caidi = sdge %>% filter(metric == 'caidi')
+
+median_saidi = rel_ca_averages %>% filter(metric == 'saidi')
+median_saifi = rel_ca_averages %>% filter(metric == 'saifi')
+median_caidi = rel_ca_averages %>% filter(metric == 'caidi')
+
+saidi_test = t.test(sdge_saidi$value, median_saidi$value)
+saifi_test = t.test(sdge_saifi$value, median_saifi$value)
+caidi_test = t.test(sdge_caidi$value, median_caidi$value)
+
+metric_df = data.frame(
+  `Metric Tested` = c('SAIDI', 'SAIFI', 'CAIDI'),
+  `SDGE Mean` = c(mean(sdge_saidi$value), mean(sdge_saifi$value), mean(sdge_caidi$value)),
+  `CA Median Mean` = c(mean(median_saidi$value), mean(median_saifi$value), mean(median_caidi$value)),
+  `P Value` = c(saidi_test$p.value, saifi_test$p.value, caidi_test$p.value)
+)
+
+gt(metric_df)
+```
+
+Theses statistical tests reinforce the conclusions drawn from the above visual.
+
+### Final Fact-Check Status
+
+*Technically True*
+
+Although the generalized claim is somewhat intellectually dishonest, for the year they cite as their data source, the claim is unequivocally true. However, that single year does not tell the whole story, and the real situation is more complex. I would consider it safe to say that overall SDGE performs at about average reliability among CA power utilities.
