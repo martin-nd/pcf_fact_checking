@@ -216,9 +216,7 @@ ggplot(
 
 Interesting, this tells us a very different story. I know now why PCF picked 2020 as their data year and has not updated it. We can see clearly that SDGE usually performs better than average on SAIFI, is about average on SAIDI, and performs a bit worse than average on CAIDI. In other words, SDGE usually has fewer outages per customer than median, about average outage duration per customer, and slightly worse than average outage duration per outage. If one were to be an SDGE customer, one could expect fewer outages than normal, but those outages may last longer than usual.
 
-Before we move on to the next claim, let's do some easy statistical tests.
-
-First, let's examine if there is a statistically meaningful difference in year-over-year reliability metrics between SDGE & the CA median.
+Before we move on to the next claim, let's do a statistical test to check for a meaningful difference in year-over-year reliability metrics between SDGE & the CA median.
 
 ```{r}
 sdge_saidi = sdge %>% filter(metric == 'saidi')
