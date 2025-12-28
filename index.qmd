@@ -241,7 +241,7 @@ metric_df = data.frame(
 gt(metric_df)
 ```
 
-Theses statistical tests reinforce the conclusions drawn from the above visual.
+These statistical tests reinforce the conclusions drawn from the above visual.
 
 ### Final Fact-Check Status
 
