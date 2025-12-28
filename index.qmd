@@ -2,11 +2,149 @@
 title: Fact Checking PCF
 author: Martin Sloley
 date: today
+execute:
+  warning: false
+  message: false
+  echo: false
 format:
   html:
     theme: darkly
     self-contained: true
+    toc: true
 ---
 
-# Introduction & Overview
+```{r}
+#libraries
+library(tidyverse)
+library(ggiraph)
+library(gtable)
+library(readxl)
+library(geomtextpath)
+library(reshape2)
+library(htmltools)
+library(stringr)
 
+reliability = read_xlsx('data/all_reliability.xlsx')
+sales = read_xlsx('data/all_sales.xlsx')
+```
+
+# Introduction
+
+## Overview
+
+Recently, an organization called the [Protect our Communities Foundation](https://www.protectourcommunities.org) (PCF) went before the California Public Utilities Commission as an intervener to criticize some of the work done by local utility [San Diego Gas & Electric](https://www.sdge.com) (SDGE). In order to better understand PCF's grievances with SDGE, I visited their website and found a page called [Facts on SDG&E](https://www.protectourcommunities.org/facts-on-sdge) with facts & figures complete with linked data sources. To me, this is a perfect opportunity to see whether PCF has their facts straight and whether they are appropriately upset with the utility giant.
+
+## Methodology
+
+In this investigation I will use the data sources provided by PCF to fact-check the claims they make about SDGE. The data I will mostly be using is historical data provided by the [US Energy Information Administration](https://www.eia.gov), specifically the [annual electric power industry report](https://www.eia.gov/electricity/data/eia861/). I have taken data from 2010 to 2024 and collated sales / rate data and grid reliability data into larger datasets that I will use to go beyond the initial claims of PCF to observe any nuance to the situation through time. Data engineering and raw data, as well as the code used to generate the findings in this document can be found in the [github repository](https://github.com/martin-nd/pcf_fact_checking).
+
+I come to these claims with preconcieved political and social opinions, but I am dedicated to desribing and displaying the data accurately and truthfully, and we will judge PCF and SDGE based only on what is factually true based on the available data.
+
+Until the conclusion where I will offer some editorialization.
+
+Let's check some facts.
+
+# Fact Checking
+
+## Reliability
+
+::: {.callout-note}
+## From PCF's 'Facts on SDG&E'
+SDG&E provides below-average reliability compared to other California utilities. [Source Data](https://www.eia.gov/electricity/data/eia861/): U.S. Energy Information Administration, 2020 Data, EIA-861S
+:::
+
+Before we check this claim, let's define some metrics that power utilities use to track their reliability.
+
+1. **CMI**: This stands for *Customer Minutes Interrupted* and is calculated by taking the length of an outage in minutes and multiplying it by the number of customers affected by the outage. This can also be communicated in hours occasionally, but is usually kept in minutes.
+
+2. **SAIDI** (pronounced like the name 'Sadie'): This stands for *System Average Interruption Duration Index*. It is calculated by taking total CMI and dividing by the total number of customers served. For example, if you run a power company that serves 5 customers, and you have one outage that lasts 2 hours that affects 2 customers for a total of $\text{2 customers} \times \text{120 minutes} = 240$ CMI, your SAIDI for the year is: $\frac{\text{240 CMI}}{\text{5 customers}} = 48$. As such, a *lower* SAIDI indicates *better* system reliability.
+
+3. **SAIFI** (pronounced like 'safety' without the 't'): This stands for *System Average Interruption Frequency Index*. It is calculated by taking the number of customer interruptions (outages) and then dividing by the total number of customers. Taking the previous example, you would have a total of $\text{2 customers} \times \text{1 interruption} = 2$ customer interruptions, your SAIFI for the year is $\frac{\text{2 customer interruptions}}{\text{5 customers}} = 0.4$. As such, a *lower* SAIFI indicates *better* system reliability.
+
+4. **CAIDI** (pronounced like the acronym 'K/D'): This stands for *Customer Average Interruption Duration Index*. It is calculated by taking the total CMI and dividing by the total number of customer interruptions. Taking our previous examples with 240 CMI and 2 customer interruptions your CAIDI for the year is: $\frac{\text{240 CMI}}{\text{2 customer interruptions}} = 120$. The algebraically-minded among you may have noticed that CAIDI can also be calculated as $\frac{\text{SAIDI}}{\text{SAIFI}}$. A *lower* CAIDI indicates *better* system reliability.
+
+To check this claim, we can observe the distribution of reliability metrics for CA power utilities in 2020 below.
+
+```{r}
+rel_ca_2020 = reliability %>%
+  filter(
+    state == 'CA',
+    data_year == 2020
+  )
+
+rel_ca_2020_melted = melt(
+  rel_ca_2020,
+    id.vars = c('utility_name'),
+    measure.vars = c('saidi', 'saifi', 'caidi'),
+    variable.name = 'metric'
+  ) %>%
+  mutate(
+    metric = str_to_upper(metric)
+  )
+
+sdge = rel_ca_2020_melted %>%
+  filter(
+    utility_name == 'San Diego Gas & Electric Co'
+  )
+
+ggplot(rel_ca_2020_melted, aes(x = '', y = value)) +
+  geom_boxplot() +
+  facet_wrap(~metric, scales = 'free') +
+  geom_hline(data = sdge, aes(yintercept = value), color = '#00197C') +
+  geom_text(data = sdge, aes(y = value, label = 'SDGE'), vjust = -6, hjust = 1.4, angle = 45) +
+  theme_minimal() +
+  labs(
+    title = 'Reliability Metric Distributions',
+    subtitle = 'USEIA 2020 Data',
+    x = '',
+    y = ''
+  )
+```
+
+We can clearly see that in 2020 SDGE had higher than average SAIDI, SAIFI, and CAIDI indicating below average grid reliability.
+
+Let's also observe the most current data at time of writing, 2024.
+
+```{r}
+rel_ca_2024 = reliability %>%
+  filter(
+    state == 'CA',
+    data_year == 2024
+  )
+
+rel_ca_2024_melted = melt(
+  rel_ca_2024,
+    id.vars = c('utility_name'),
+    measure.vars = c('saidi', 'saifi', 'caidi'),
+    variable.name = 'metric'
+  ) %>%
+  mutate(
+    metric = str_to_upper(metric)
+  )
+
+sdge = rel_ca_2024_melted %>%
+  filter(
+    utility_name == 'San Diego Gas & Electric Co'
+  )
+
+ggplot(rel_ca_2024_melted, aes(x = '', y = value)) +
+  geom_boxplot() +
+  facet_wrap(~metric, scales = 'free') +
+  geom_hline(data = sdge, aes(yintercept = value), color = '#001980') +
+  geom_text(data = sdge, aes(y = value, label = 'SDGE'), vjust = -6.2, hjust = 1.4, angle = 45) +
+  theme_minimal() +
+  labs(
+    title = 'Reliability Metric Distributions',
+    subtitle = 'USEIA 2024 Data',
+    x = '',
+    y = ''
+  )
+```
+
+It would seem that SDGE has successfully managed to reduce the average number of outages per customer, but unfortunately those outages are still longer and larger than average for CA. It should be noted that SDGE is not only below average, but also seems to struggle to stay within the IQR.
+
+Let's now observe how SDGE compares to the average through the years.
+
+```{r}
+
+```
