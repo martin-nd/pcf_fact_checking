@@ -1,0 +1,12 @@
+---
+title: Fact Checking PCF
+author: Martin Sloley
+date: today
+format:
+  html:
+    theme: darkly
+    self-contained: true
+---
+
+# Introduction & Overview
+
