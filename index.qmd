@@ -247,4 +247,6 @@ These statistical tests reinforce the conclusions drawn from the above visual.
 
 *Technically True*
 
+{{< video https://www.youtube.com/watch?v=aIzMuPMicGc >}}
+
 Although the generalized claim is somewhat intellectually dishonest, for the year they cite as their data source, the claim is unequivocally true. However, that single year does not tell the whole story, and the real situation is more complex. I would consider it safe to say that overall SDGE performs at about average reliability among CA power utilities.
