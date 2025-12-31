@@ -24,6 +24,7 @@ library(reshape2)
 library(htmltools)
 library(stringr)
 library(gt)
+library(ggrepel)
 
 reliability = read_xlsx('data/all_reliability.xlsx')
 sales = read_xlsx('data/all_sales.xlsx')
@@ -208,7 +209,6 @@ ggplot(
     y = ''
   ) +
   theme(
-    axis.text.x = element_text(angle = 90),
     legend.position = 'none'
   ) +
   scale_color_manual(values = mycolors)
@@ -318,5 +318,243 @@ sales2024_ca %>%
 
 Well it's definitely true for 2024, and it's by a non-negligible margin. Again let's observe trends through the years and see how SDGE measures up against the median.
 
+```{r}
+sales_filtered = sales %>%
+  filter(
+    str_count(utility_name, 'Adjustment') == 0,
+    part == 'A',
+    state == 'CA'
+  )
 
+ca_median_rates = sales_filtered %>%
+  group_by(data_year) %>%
+  summarize(
+    cpkwh_residential = median(cpkwh_residential, na.rm = TRUE)
+  )
+
+ca_median_rates$rate = 'CA Median'
+ca_median_rates$rank = NA
+
+sdge_rates = sales_filtered %>%
+  filter(str_count(utility_name, 'San Diego') > 0) %>%
+  select(
+    data_year, cpkwh_residential
+  )
+
+sdge_rates$rate = 'SDGE'
+
+sdge_ranks = sales_filtered %>%
+  group_by(data_year) %>%
+  arrange(desc(cpkwh_residential)) %>%
+  mutate(rank = order(order(cpkwh_residential, decreasing = TRUE))) %>%
+  ungroup()
+sdge_ranks = sdge_ranks %>% filter(str_count(utility_name, 'San Diego') > 0) %>%
+  .[,c('cpkwh_residential', 'rank')]
+
+sdge_rates = sdge_rates %>%
+  left_join(sdge_ranks, by = 'cpkwh_residential')
+
+rates_viz_df = rbind(ca_median_rates, sdge_rates)
+rates_viz_df = rates_viz_df %>%
+  mutate(rank = ifelse((!is.na(rank)) & (rank <= 3), sprintf('%s: Rank %s', data_year, rank), NA))
+
+ggplot(rates_viz_df, aes(x = data_year, y = cpkwh_residential, color = rate, group = rate)) +
+  geom_textline(aes(label = rate), hjust = 0) +
+  geom_label_repel(aes(label = rank), ) +
+  scale_color_manual(values = mycolors) +
+  theme_minimal() +
+  labs(
+    x = '',
+    y = 'Residential c/kWh',
+    title = 'SDGE vs. CA Median',
+    subtitle = 'USEIA 2010-2024 Data'
+  ) +
+  theme(
+    legend.position = 'none'
+  )
+```
+
+Again this tells us the more interesting story. SDGE has certainly always been on the expensive side compared to the average energy rate in California. I've also added labels to the years where SDGE ranks in the top 3 most expensive energy companies. We can see that since 2018 SDGE has been in the top 3 most expensive power companies in California every year except 2020. Let's observe the same data, but only for power companies that serve at least 1000 customers.
+
+```{r}
+sales_filtered = sales %>%
+  filter(
+    str_count(utility_name, 'Adjustment') == 0,
+    part == 'A',
+    state == 'CA',
+    customers_residential >= 1000
+  )
+
+ca_median_rates = sales_filtered %>%
+  group_by(data_year) %>%
+  summarize(
+    cpkwh_residential = median(cpkwh_residential, na.rm = TRUE)
+  )
+
+ca_median_rates$rate = 'CA Median'
+ca_median_rates$rank = NA
+
+sdge_rates = sales_filtered %>%
+  filter(str_count(utility_name, 'San Diego') > 0) %>%
+  select(
+    data_year, cpkwh_residential
+  )
+
+sdge_rates$rate = 'SDGE'
+
+sdge_ranks = sales_filtered %>%
+  group_by(data_year) %>%
+  arrange(desc(cpkwh_residential)) %>%
+  mutate(rank = order(order(cpkwh_residential, decreasing = TRUE))) %>%
+  ungroup()
+sdge_ranks = sdge_ranks %>% filter(str_count(utility_name, 'San Diego') > 0) %>%
+  .[,c('cpkwh_residential', 'rank')]
+
+sdge_rates = sdge_rates %>%
+  left_join(sdge_ranks, by = 'cpkwh_residential')
+
+rates_viz_df = rbind(ca_median_rates, sdge_rates)
+rates_viz_df = rates_viz_df %>%
+  mutate(rank = ifelse((!is.na(rank)) & (rank <= 3), sprintf('%s: Rank %s', data_year, rank), NA))
+
+ggplot(rates_viz_df, aes(x = data_year, y = cpkwh_residential, color = rate, group = rate)) +
+  geom_textline(aes(label = rate), hjust = 0) +
+  geom_label_repel(aes(label = rank), ) +
+  scale_color_manual(values = mycolors) +
+  theme_minimal() +
+  labs(
+    x = '',
+    y = 'Residential c/kWh',
+    title = 'SDGE vs. CA Median',
+    subtitle = 'USEIA 2010-2024 Data'
+  ) +
+  theme(
+    legend.position = 'none'
+  )
+```
+
+When we remove miniscule premium power services, we see that SDGE has been in the top 3 most expensive power companies in California since 2015 and has been the most expensive since 2020.
+
+I won't bother with a statistical test. The difference between the median and SDGE in the visualizations speaks for itself.
+
+### Final Fact-Check Status
+
+*Technically False*
+
+The exact claim on PCF's website is unequivocally false. In 2020 SDGE was *not* the most expensive power company providing residential service. However, in the same way that PCF's claims about reliability was somewhat lacking in nuance, so is this one. While SDGE is technically not the most expensive power company in California, it is far more expensive than your average California power utility and consistently ranks in the top 3 most expensive in the state, holding the number 1 most expensive position among its peers for 4 years running.
+
+## Renewable and GHG-Free Energy
+
+```{r}
+n = length(2016:2023) * 3
+power_content_labels = data.frame(
+  data_year = rep(2016:2023, 3),
+  utility_name = c(rep('SDGE', n / 3), rep('SDCP', n / 3), rep('CA Average', n / 3)),
+  biomass = c(0.01, 0.02, 0.02, 0.022, 0.021, 0.009, 0.029, 0.007, NA, NA, NA, NA, NA, 0.069, 0.012, 0.073, 0.02, 0.02, 0.02, 0.024, 0.025, 0.023, 0.021, 0.021),
+  geothermal = c(0, 0, 0, 0, 0, 0, 0, 0, NA, NA, NA, NA, NA, 0.038, 0.026, 0.007, 0.04, 0.04, 0.05, 0.048, 0.049, 0.048, 0.047, 0.048),
+  ren_hydroelectric = c(0, 0, 0, 0, 0, 0, 0, 0.001, NA, NA, NA, NA, NA, 0.005, 0.013, 0.005, 0.02, 0.03, 0.02, 0.02, 0.014, 0.01, 0.011, 0.018),
+  solar = c(0.21, 0.21, 0.2, 0.165, 0.179, 0.285, 0.28, 0.226, NA, NA, NA, NA, NA, 0.288, 0.255, 0.273, 0.08, 0.1, 0.11, 0.123, 0.132, 0.142, 0.17, 0.17),
+  wind = c(0.21, 0.21, 0.21, 0.126, 0.11, 0.152, 0.139, 0.18, NA, NA, NA, NA, NA, 0.148, 0.236, 0.153, 0.09, 0.1, 0.11, 0.102, 0.111, 0.114, 0.108, 0.112),
+  coal = c(0, 0, 0, 0, 0, 0, 0, 0, NA, NA, NA, NA, NA, 0, 0, 0, 0.04, 0.04, 0.03, 0.03, 0.027, 0.03, 0.021, 0.018),
+  hydroelectric = c(0, 0, 0, 0, 0.017, 0.018, 0, 0.002, NA, NA, NA, NA, NA, 0.118, 0.128, 0.043, 0.1, 0.15, 0.11, 0.146, 0.122, 0.092, 0.092, 0.117),
+  nat_gas = c(0.42, 0.39, 0.29, 0.244, 0.262, 0.296, 0.544, 0.584, NA, NA, NA, NA, NA, 0, 0, 0, 0.37, 0.34, 0.35, 0.342, 0.371, 0.379, 0.364, 0.366),
+  nuclear = c(0, 0, 0, 0, 0.002, 0.002, 0, 0, NA, NA, NA, NA, NA, 0, 0, 0, 0.09, 0.09, 0.09, 0.09, 0.093, 0.093, 0.092, 0.093),
+  other = c(0, 0, 0.01, 0, 0, 0, 0, 0, NA, NA, NA, NA, NA, 0, 0, 0, 0, 0.01, 0.01, 0.002, 0.002, 0.002, 0.001, 0.001),
+  unspecified = c(0.15, 0.17, 0.27, 0.442, 0.409, 0.239, 0.008, 0, NA, NA, NA, NA, NA, 0.333, 0.331, 0.446, 0.15, 0.09, 0.11, 0.073, 0.054, 0.068, 0.071, 0.037)
+)
+
+# integrity check
+# apply(power_content_labels[,3:ncol(power_content_labels)], 1, sum) # should return an array of 1s or NA
+# sum(power_content_labels[,3:ncol(power_content_labels)], na.rm = TRUE) # should be 19 (8 sdge, 8 ca av, 3 sdcp)
+```
+
+::: {.callout-note}
+## From PCF's 'Facts on SDG&E'
+SDG&E provides below-average renewable energy content compared to other California electricity providers (renewable energy as defined by the California Public Utilities Code). [Source Data](https://www.energy.ca.gov/programs-and-topics/programs/power-source-disclosure-program/power-content-label/annual-power): California Power Content Labels as reported by the California Energy Commission.
+:::
+
+::: {.callout-note}
+## From PCF's 'Facts on SDG&E'
+SDG&E provides below-average greenhouse-gas-free energy content compared to other California electricity providers. [Greenhouse-gas-free energy = (renewable energy) – (biomass & biogas) + (large hydroelectric) + (nuclear)]. [Source Data](https://www.energy.ca.gov/programs-and-topics/programs/power-source-disclosure-program/power-content-label/annual-power): California Power Content Labels as reported by the California Energy Commission.
+:::
+
+PCF's website links to specifically the 2019 power content labels, although no year is specified in the claims themselves. I'm going to fact check them against the 2019 power content labels.
+
+After painstakingly and manually hand-entering power label data into an R dataframe, we can observe GHG free and renewable energy proportions in the plot below.
+
+```{r}
+calculate_renewables = function(df) {
+  renewables = df[,3:7]
+  renewables_sum = apply(renewables, 1, sum)
+  df$renewable = renewables_sum
+  return(df)
+}
+
+calculate_ghg_free = function(df) {
+  ghg_free = df[,c(4:7, 9, 11)]
+  ghg_free_sum = apply(ghg_free, 1, sum)
+  df$ghg_free = ghg_free_sum
+  return(df)
+}
+
+power_content_labels = power_content_labels %>%
+  calculate_renewables() %>%
+  calculate_ghg_free()
+
+sdge_av = power_content_labels %>%
+  filter(utility_name != 'SDCP') %>%
+  melt(
+    id.vars = c('data_year', 'utility_name'),
+    measure.vars = c('renewable', 'ghg_free'),
+    variable.name = 'metric'
+  ) %>%
+  mutate(
+    metric = ifelse(
+      metric == 'renewable',
+      'Renewable',
+      'GHG Free'
+    )
+  )
+
+ggplot(sdge_av, aes(x = data_year, y = value, color = utility_name, group = utility_name)) +
+  geom_textline(aes(label = utility_name), hjust = 0.25) +
+  labs(
+    title = 'Proportion of Total Energy Generation by Year',
+    subtitle = 'SDGE vs. CA Average 2016-2023',
+    x = '',
+    y = '',
+    color = ''
+  ) +
+  facet_grid(metric ~ .) +
+  theme_minimal() +
+  theme(
+    legend.position = 'none'
+  ) +
+  scale_color_manual(values = mycolors) +
+  scale_y_continuous(
+    breaks = c(0.3, 0.4, 0.5, 0.6),
+    labels = c('30%', '40%', '50%', '60%')
+  ) +
+  scale_x_continuous(
+    breaks = 2016:2023
+  )
+```
+
+An interesting pattern is developing regarding PCF's claims. They do certainly seem to enjoy cherry-picking their data. One very interesting thing to me in this plot is that over 50% of California's electrical energy comes from sources that do not generate greenhouse gases, even if they are not renewable, and that is laudable in itself.
+
+### Final Fact-Check Status
+
+#### Renewable Energy
+
+*Technically True*
+
+#### GHG Free Energy
+
+*Unequivocally True*
+
+While PCF's claim about renewable energy is unequivocally true for the 2019 year, it is similar to their claim about reliability, as it relies on one of only 2 years that SDGE had below-average renewables. Outside of 2019 and 2020 SDGE actually performs quite well on renewables when compared to the CA average.
+
+However, PCF's claim about SDGE's GHG free energy use is unequivocally true. SDGE uses below average GHG free energy content than the CA average. Every year, without question, and non-negligibly. I actually think this is the more damning claim, as who cares about renewability if you continue to contribute to climate change anyway. Isn't that what this is all about?
+
+Something interesting to note, here, however, is that, on average, CA power content consists of more than 50% GHG free sources. That is laudable in and of itself.
 
