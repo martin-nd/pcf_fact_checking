@@ -250,3 +250,73 @@ These statistical tests reinforce the conclusions drawn from the above visual.
 {{< video https://www.youtube.com/watch?v=aIzMuPMicGc >}}
 
 Although the generalized claim is somewhat intellectually dishonest, for the year they cite as their data source, the claim is unequivocally true. However, that single year does not tell the whole story, and the real situation is more complex. I would consider it safe to say that overall SDGE performs at about average reliability among CA power utilities.
+
+## Rates
+
+::: {.callout-note}
+## From PCF's 'Facts on SDG&E'
+SDG&E charges electricity customers the highest rates in the state. [Source Data](https://www.eia.gov/electricity/sales_revenue_price/): U.S. Energy Information Administration, 2020 Data, Table T6, Residential Sector, California Utilities with over 100,000 customers.
+:::
+
+Taking a look at the linked data source, we can see that Table T6 is specifically the table that displays c/kWh for residential customers. We can also see that SDGE charged 25.51 c/kWh in T6 2020. We can take the USEIA raw data and manipulate it to align with this table so we can sort it and look at the rankings.
+
+```{r}
+cpkwh = function(df, category) {
+  category_td_col = sprintf('thousand_dollars_%s', category)
+  category_mwh_col = sprintf('megawatthours_%s', category)
+  tens_dollars = df[,category_td_col] * 100
+  cpkwh_col = sprintf('cpkwh_%s', category)
+  df[,cpkwh_col] = tens_dollars / df[,category_mwh_col]
+  return(df)
+}
+
+sales = read_xlsx('data/all_sales.xlsx') %>%
+  cpkwh('residential') %>%
+  cpkwh('commercial') %>%
+  cpkwh('industrial') %>%
+  cpkwh('transportation') %>%
+  cpkwh('total')
+
+sales2020_ca = sales %>%
+  filter(
+    data_year == 2020,
+    state == 'CA'
+  )
+
+sales2020_ca = sales2020_ca %>%
+  arrange(desc(cpkwh_residential))
+
+sales2020_ca %>%
+  select(
+    data_year, utility_name, part, service_type, 
+    customers_residential, cpkwh_residential
+  ) %>%
+  head(10) %>%
+  gt()
+```
+
+Even when we account for the customer base, SDGE is still only the second highest rate in California. Let's see if this is at least true for 2024.
+
+```{r}
+sales2024_ca = sales %>%
+  filter(
+    data_year == 2024,
+    state == 'CA'
+  )
+
+sales2024_ca = sales2024_ca %>%
+  arrange(desc(cpkwh_residential))
+
+sales2024_ca %>%
+  select(
+    data_year, utility_name, part, service_type, 
+    customers_residential, cpkwh_residential
+  ) %>%
+  head(10) %>%
+  gt()
+```
+
+Well it's definitely true for 2024, and it's by a non-negligible margin. Again let's observe trends through the years and see how SDGE measures up against the median.
+
+
+
