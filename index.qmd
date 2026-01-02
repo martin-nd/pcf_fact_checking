@@ -76,10 +76,10 @@ rel_ca_2020 = reliability %>%
 
 rel_ca_2020_melted = melt(
   rel_ca_2020,
-    id.vars = c('utility_name'),
-    measure.vars = c('saidi', 'saifi', 'caidi'),
-    variable.name = 'metric'
-  ) %>%
+  id.vars = c('utility_name'),
+  measure.vars = c('saidi', 'saifi', 'caidi'),
+  variable.name = 'metric'
+) %>%
   mutate(
     metric = str_to_upper(metric)
   )
@@ -93,7 +93,13 @@ ggplot(rel_ca_2020_melted, aes(x = '', y = value)) +
   geom_boxplot() +
   facet_wrap(~metric, scales = 'free') +
   geom_hline(data = sdge, aes(yintercept = value), color = '#00197C') +
-  geom_text(data = sdge, aes(y = value, label = 'SDGE'), vjust = -6, hjust = 1.4, angle = 45) +
+  geom_text(
+    data = sdge,
+    aes(y = value, label = 'SDGE'),
+    vjust = -6,
+    hjust = 1.4,
+    angle = 45
+  ) +
   theme_minimal() +
   labs(
     title = 'Reliability Metric Distributions',
@@ -116,10 +122,10 @@ rel_ca_2024 = reliability %>%
 
 rel_ca_2024_melted = melt(
   rel_ca_2024,
-    id.vars = c('utility_name'),
-    measure.vars = c('saidi', 'saifi', 'caidi'),
-    variable.name = 'metric'
-  ) %>%
+  id.vars = c('utility_name'),
+  measure.vars = c('saidi', 'saifi', 'caidi'),
+  variable.name = 'metric'
+) %>%
   mutate(
     metric = str_to_upper(metric)
   )
@@ -133,7 +139,13 @@ ggplot(rel_ca_2024_melted, aes(x = '', y = value)) +
   geom_boxplot() +
   facet_wrap(~metric, scales = 'free') +
   geom_hline(data = sdge, aes(yintercept = value), color = '#001980') +
-  geom_text(data = sdge, aes(y = value, label = 'SDGE'), vjust = -6.2, hjust = 1.4, angle = 45) +
+  geom_text(
+    data = sdge,
+    aes(y = value, label = 'SDGE'),
+    vjust = -6.2,
+    hjust = 1.4,
+    angle = 45
+  ) +
   theme_minimal() +
   labs(
     title = 'Reliability Metric Distributions',
@@ -153,7 +165,7 @@ mycolors = c('#a1a1a0', '#001980')
 rel_ca_averages = reliability %>%
   filter(state == 'CA') %>%
   melt(
-    id.vars = c('data_year', 'utility_name'), 
+    id.vars = c('data_year', 'utility_name'),
     measure.vars = c('saifi', 'saidi', 'caidi'),
     variable.name = 'metric'
   ) %>%
@@ -185,20 +197,22 @@ sdge = reliability %>%
 sdge$utility_name = 'SDGE'
 
 ts_df = rbind(
-    rel_ca_averages,
-    sdge
-  ) %>%
+  rel_ca_averages,
+  sdge
+) %>%
   mutate(
     metric = str_to_upper(metric)
   )
 
 ggplot(
-    ts_df, 
-    aes(
-      x = data_year, y = value, 
-      color = utility_name, group = utility_name
-    )
-  ) +
+  ts_df,
+  aes(
+    x = data_year,
+    y = value,
+    color = utility_name,
+    group = utility_name
+  )
+) +
   geom_textline(aes(label = utility_name), hjust = 0.3) +
   facet_grid(metric ~ ., scales = 'free_y') +
   theme_minimal() +
@@ -233,8 +247,16 @@ caidi_test = t.test(sdge_caidi$value, median_caidi$value)
 
 metric_df = data.frame(
   `Metric Tested` = c('SAIDI', 'SAIFI', 'CAIDI'),
-  `SDGE Mean` = c(mean(sdge_saidi$value), mean(sdge_saifi$value), mean(sdge_caidi$value)),
-  `CA Median Mean` = c(mean(median_saidi$value), mean(median_saifi$value), mean(median_caidi$value)),
+  `SDGE Mean` = c(
+    mean(sdge_saidi$value),
+    mean(sdge_saifi$value),
+    mean(sdge_caidi$value)
+  ),
+  `CA Median Mean` = c(
+    mean(median_saidi$value),
+    mean(median_saifi$value),
+    mean(median_caidi$value)
+  ),
   `P Value` = c(saidi_test$p.value, saifi_test$p.value, caidi_test$p.value)
 )
 
@@ -264,9 +286,9 @@ Taking a look at the linked data source, we can see that Table T6 is specificall
 cpkwh = function(df, category) {
   category_td_col = sprintf('thousand_dollars_%s', category)
   category_mwh_col = sprintf('megawatthours_%s', category)
-  tens_dollars = df[,category_td_col] * 100
+  tens_dollars = df[, category_td_col] * 100
   cpkwh_col = sprintf('cpkwh_%s', category)
-  df[,cpkwh_col] = tens_dollars / df[,category_mwh_col]
+  df[, cpkwh_col] = tens_dollars / df[, category_mwh_col]
   return(df)
 }
 
@@ -288,8 +310,12 @@ sales2020_ca = sales2020_ca %>%
 
 sales2020_ca %>%
   select(
-    data_year, utility_name, part, service_type, 
-    customers_residential, cpkwh_residential
+    data_year,
+    utility_name,
+    part,
+    service_type,
+    customers_residential,
+    cpkwh_residential
   ) %>%
   head(10) %>%
   gt()
@@ -309,8 +335,12 @@ sales2024_ca = sales2024_ca %>%
 
 sales2024_ca %>%
   select(
-    data_year, utility_name, part, service_type, 
-    customers_residential, cpkwh_residential
+    data_year,
+    utility_name,
+    part,
+    service_type,
+    customers_residential,
+    cpkwh_residential
   ) %>%
   head(10) %>%
   gt()
@@ -338,7 +368,8 @@ ca_median_rates$rank = NA
 sdge_rates = sales_filtered %>%
   filter(str_count(utility_name, 'San Diego') > 0) %>%
   select(
-    data_year, cpkwh_residential
+    data_year,
+    cpkwh_residential
   )
 
 sdge_rates$rate = 'SDGE'
@@ -348,17 +379,27 @@ sdge_ranks = sales_filtered %>%
   arrange(desc(cpkwh_residential)) %>%
   mutate(rank = order(order(cpkwh_residential, decreasing = TRUE))) %>%
   ungroup()
-sdge_ranks = sdge_ranks %>% filter(str_count(utility_name, 'San Diego') > 0) %>%
-  .[,c('cpkwh_residential', 'rank')]
+sdge_ranks = sdge_ranks %>%
+  filter(str_count(utility_name, 'San Diego') > 0) %>%
+  .[, c('cpkwh_residential', 'rank')]
 
 sdge_rates = sdge_rates %>%
   left_join(sdge_ranks, by = 'cpkwh_residential')
 
 rates_viz_df = rbind(ca_median_rates, sdge_rates)
 rates_viz_df = rates_viz_df %>%
-  mutate(rank = ifelse((!is.na(rank)) & (rank <= 3), sprintf('%s: Rank %s', data_year, rank), NA))
+  mutate(
+    rank = ifelse(
+      (!is.na(rank)) & (rank <= 3),
+      sprintf('%s: Rank %s', data_year, rank),
+      NA
+    )
+  )
 
-ggplot(rates_viz_df, aes(x = data_year, y = cpkwh_residential, color = rate, group = rate)) +
+ggplot(
+  rates_viz_df,
+  aes(x = data_year, y = cpkwh_residential, color = rate, group = rate)
+) +
   geom_textline(aes(label = rate), hjust = 0) +
   geom_label_repel(aes(label = rank), ) +
   scale_color_manual(values = mycolors) +
@@ -397,7 +438,8 @@ ca_median_rates$rank = NA
 sdge_rates = sales_filtered %>%
   filter(str_count(utility_name, 'San Diego') > 0) %>%
   select(
-    data_year, cpkwh_residential
+    data_year,
+    cpkwh_residential
   )
 
 sdge_rates$rate = 'SDGE'
@@ -407,17 +449,27 @@ sdge_ranks = sales_filtered %>%
   arrange(desc(cpkwh_residential)) %>%
   mutate(rank = order(order(cpkwh_residential, decreasing = TRUE))) %>%
   ungroup()
-sdge_ranks = sdge_ranks %>% filter(str_count(utility_name, 'San Diego') > 0) %>%
-  .[,c('cpkwh_residential', 'rank')]
+sdge_ranks = sdge_ranks %>%
+  filter(str_count(utility_name, 'San Diego') > 0) %>%
+  .[, c('cpkwh_residential', 'rank')]
 
 sdge_rates = sdge_rates %>%
   left_join(sdge_ranks, by = 'cpkwh_residential')
 
 rates_viz_df = rbind(ca_median_rates, sdge_rates)
 rates_viz_df = rates_viz_df %>%
-  mutate(rank = ifelse((!is.na(rank)) & (rank <= 3), sprintf('%s: Rank %s', data_year, rank), NA))
+  mutate(
+    rank = ifelse(
+      (!is.na(rank)) & (rank <= 3),
+      sprintf('%s: Rank %s', data_year, rank),
+      NA
+    )
+  )
 
-ggplot(rates_viz_df, aes(x = data_year, y = cpkwh_residential, color = rate, group = rate)) +
+ggplot(
+  rates_viz_df,
+  aes(x = data_year, y = cpkwh_residential, color = rate, group = rate)
+) +
   geom_textline(aes(label = rate), hjust = 0) +
   geom_label_repel(aes(label = rank), ) +
   scale_color_manual(values = mycolors) +
@@ -449,18 +501,297 @@ The exact claim on PCF's website is unequivocally false. In 2020 SDGE was *not* 
 n = length(2016:2023) * 3
 power_content_labels = data.frame(
   data_year = rep(2016:2023, 3),
-  utility_name = c(rep('SDGE', n / 3), rep('SDCP', n / 3), rep('CA Average', n / 3)),
-  biomass = c(0.01, 0.02, 0.02, 0.022, 0.021, 0.009, 0.029, 0.007, NA, NA, NA, NA, NA, 0.069, 0.012, 0.073, 0.02, 0.02, 0.02, 0.024, 0.025, 0.023, 0.021, 0.021),
-  geothermal = c(0, 0, 0, 0, 0, 0, 0, 0, NA, NA, NA, NA, NA, 0.038, 0.026, 0.007, 0.04, 0.04, 0.05, 0.048, 0.049, 0.048, 0.047, 0.048),
-  ren_hydroelectric = c(0, 0, 0, 0, 0, 0, 0, 0.001, NA, NA, NA, NA, NA, 0.005, 0.013, 0.005, 0.02, 0.03, 0.02, 0.02, 0.014, 0.01, 0.011, 0.018),
-  solar = c(0.21, 0.21, 0.2, 0.165, 0.179, 0.285, 0.28, 0.226, NA, NA, NA, NA, NA, 0.288, 0.255, 0.273, 0.08, 0.1, 0.11, 0.123, 0.132, 0.142, 0.17, 0.17),
-  wind = c(0.21, 0.21, 0.21, 0.126, 0.11, 0.152, 0.139, 0.18, NA, NA, NA, NA, NA, 0.148, 0.236, 0.153, 0.09, 0.1, 0.11, 0.102, 0.111, 0.114, 0.108, 0.112),
-  coal = c(0, 0, 0, 0, 0, 0, 0, 0, NA, NA, NA, NA, NA, 0, 0, 0, 0.04, 0.04, 0.03, 0.03, 0.027, 0.03, 0.021, 0.018),
-  hydroelectric = c(0, 0, 0, 0, 0.017, 0.018, 0, 0.002, NA, NA, NA, NA, NA, 0.118, 0.128, 0.043, 0.1, 0.15, 0.11, 0.146, 0.122, 0.092, 0.092, 0.117),
-  nat_gas = c(0.42, 0.39, 0.29, 0.244, 0.262, 0.296, 0.544, 0.584, NA, NA, NA, NA, NA, 0, 0, 0, 0.37, 0.34, 0.35, 0.342, 0.371, 0.379, 0.364, 0.366),
-  nuclear = c(0, 0, 0, 0, 0.002, 0.002, 0, 0, NA, NA, NA, NA, NA, 0, 0, 0, 0.09, 0.09, 0.09, 0.09, 0.093, 0.093, 0.092, 0.093),
-  other = c(0, 0, 0.01, 0, 0, 0, 0, 0, NA, NA, NA, NA, NA, 0, 0, 0, 0, 0.01, 0.01, 0.002, 0.002, 0.002, 0.001, 0.001),
-  unspecified = c(0.15, 0.17, 0.27, 0.442, 0.409, 0.239, 0.008, 0, NA, NA, NA, NA, NA, 0.333, 0.331, 0.446, 0.15, 0.09, 0.11, 0.073, 0.054, 0.068, 0.071, 0.037)
+  utility_name = c(
+    rep('SDGE', n / 3),
+    rep('SDCP', n / 3),
+    rep('CA Average', n / 3)
+  ),
+  biomass = c(
+    0.01,
+    0.02,
+    0.02,
+    0.022,
+    0.021,
+    0.009,
+    0.029,
+    0.007,
+    NA,
+    NA,
+    NA,
+    NA,
+    NA,
+    0.069,
+    0.012,
+    0.073,
+    0.02,
+    0.02,
+    0.02,
+    0.024,
+    0.025,
+    0.023,
+    0.021,
+    0.021
+  ),
+  geothermal = c(
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    NA,
+    NA,
+    NA,
+    NA,
+    NA,
+    0.038,
+    0.026,
+    0.007,
+    0.04,
+    0.04,
+    0.05,
+    0.048,
+    0.049,
+    0.048,
+    0.047,
+    0.048
+  ),
+  ren_hydroelectric = c(
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0.001,
+    NA,
+    NA,
+    NA,
+    NA,
+    NA,
+    0.005,
+    0.013,
+    0.005,
+    0.02,
+    0.03,
+    0.02,
+    0.02,
+    0.014,
+    0.01,
+    0.011,
+    0.018
+  ),
+  solar = c(
+    0.21,
+    0.21,
+    0.2,
+    0.165,
+    0.179,
+    0.285,
+    0.28,
+    0.226,
+    NA,
+    NA,
+    NA,
+    NA,
+    NA,
+    0.288,
+    0.255,
+    0.273,
+    0.08,
+    0.1,
+    0.11,
+    0.123,
+    0.132,
+    0.142,
+    0.17,
+    0.17
+  ),
+  wind = c(
+    0.21,
+    0.21,
+    0.21,
+    0.126,
+    0.11,
+    0.152,
+    0.139,
+    0.18,
+    NA,
+    NA,
+    NA,
+    NA,
+    NA,
+    0.148,
+    0.236,
+    0.153,
+    0.09,
+    0.1,
+    0.11,
+    0.102,
+    0.111,
+    0.114,
+    0.108,
+    0.112
+  ),
+  coal = c(
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    NA,
+    NA,
+    NA,
+    NA,
+    NA,
+    0,
+    0,
+    0,
+    0.04,
+    0.04,
+    0.03,
+    0.03,
+    0.027,
+    0.03,
+    0.021,
+    0.018
+  ),
+  hydroelectric = c(
+    0,
+    0,
+    0,
+    0,
+    0.017,
+    0.018,
+    0,
+    0.002,
+    NA,
+    NA,
+    NA,
+    NA,
+    NA,
+    0.118,
+    0.128,
+    0.043,
+    0.1,
+    0.15,
+    0.11,
+    0.146,
+    0.122,
+    0.092,
+    0.092,
+    0.117
+  ),
+  nat_gas = c(
+    0.42,
+    0.39,
+    0.29,
+    0.244,
+    0.262,
+    0.296,
+    0.544,
+    0.584,
+    NA,
+    NA,
+    NA,
+    NA,
+    NA,
+    0,
+    0,
+    0,
+    0.37,
+    0.34,
+    0.35,
+    0.342,
+    0.371,
+    0.379,
+    0.364,
+    0.366
+  ),
+  nuclear = c(
+    0,
+    0,
+    0,
+    0,
+    0.002,
+    0.002,
+    0,
+    0,
+    NA,
+    NA,
+    NA,
+    NA,
+    NA,
+    0,
+    0,
+    0,
+    0.09,
+    0.09,
+    0.09,
+    0.09,
+    0.093,
+    0.093,
+    0.092,
+    0.093
+  ),
+  other = c(
+    0,
+    0,
+    0.01,
+    0,
+    0,
+    0,
+    0,
+    0,
+    NA,
+    NA,
+    NA,
+    NA,
+    NA,
+    0,
+    0,
+    0,
+    0,
+    0.01,
+    0.01,
+    0.002,
+    0.002,
+    0.002,
+    0.001,
+    0.001
+  ),
+  unspecified = c(
+    0.15,
+    0.17,
+    0.27,
+    0.442,
+    0.409,
+    0.239,
+    0.008,
+    0,
+    NA,
+    NA,
+    NA,
+    NA,
+    NA,
+    0.333,
+    0.331,
+    0.446,
+    0.15,
+    0.09,
+    0.11,
+    0.073,
+    0.054,
+    0.068,
+    0.071,
+    0.037
+  )
 )
 
 # integrity check
@@ -484,14 +815,14 @@ After painstakingly and manually hand-entering power label data into an R datafr
 
 ```{r}
 calculate_renewables = function(df) {
-  renewables = df[,3:7]
+  renewables = df[, 3:7]
   renewables_sum = apply(renewables, 1, sum)
   df$renewable = renewables_sum
   return(df)
 }
 
 calculate_ghg_free = function(df) {
-  ghg_free = df[,c(4:7, 9, 11)]
+  ghg_free = df[, c(4:7, 9, 11)]
   ghg_free_sum = apply(ghg_free, 1, sum)
   df$ghg_free = ghg_free_sum
   return(df)
@@ -516,7 +847,10 @@ sdge_av = power_content_labels %>%
     )
   )
 
-ggplot(sdge_av, aes(x = data_year, y = value, color = utility_name, group = utility_name)) +
+ggplot(
+  sdge_av,
+  aes(x = data_year, y = value, color = utility_name, group = utility_name)
+) +
   geom_textline(aes(label = utility_name), hjust = 0.25) +
   labs(
     title = 'Proportion of Total Energy Generation by Year',
