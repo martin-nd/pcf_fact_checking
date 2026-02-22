@@ -34,7 +34,7 @@ sales = read_xlsx('data/all_sales.xlsx')
 
 ## Overview
 
-Recently, an organization called the [Protect our Communities Foundation](https://www.protectourcommunities.org) (PCF) went before the California Public Utilities Commission as an intervener to criticize some of the work done by local utility [San Diego Gas & Electric](https://www.sdge.com) (SDGE). In order to better understand PCF's grievances with SDGE, I visited their website and found a page called [Facts on SDG&E](https://www.protectourcommunities.org/facts-on-sdge) with facts & figures complete with linked data sources. To me, this is a perfect opportunity to see whether PCF has their facts straight and whether they are appropriately upset with the utility giant.
+Recently, an organization called the [Protect our Communities Foundation](https://www.protectourcommunities.org) (PCF) went before the California Public Utilities Commission as an intervener to criticize some of the work done by local utility [San Diego Gas & Electric](https://www.sdge.com) (SDGE). In order to better understand PCF's grievances with SDGE, I visited their website and found a page called [Facts on SDG&E](https://web.archive.org/web/20260218100756/https://www.protectourcommunities.org/facts-on-sdge) with facts & figures complete with linked data sources. To me, this is a perfect opportunity to see whether PCF has their facts straight and whether they are appropriately upset with the utility giant.
 
 ## Methodology
 
@@ -229,41 +229,6 @@ ggplot(
 ```
 
 Interesting, this tells us a very different story. I know now why PCF picked 2020 as their data year and has not updated it. We can see clearly that SDGE usually performs better than average on SAIFI, is about average on SAIDI, and performs a bit worse than average on CAIDI. In other words, SDGE usually has fewer outages per customer than median, about average outage duration per customer, and slightly worse than average outage duration per outage. If one were to be an SDGE customer, one could expect fewer outages than normal, but those outages may last longer than usual.
-
-Before we move on to the next claim, let's do a statistical test to check for a meaningful difference in year-over-year reliability metrics between SDGE & the CA median.
-
-```{r}
-sdge_saidi = sdge %>% filter(metric == 'saidi')
-sdge_saifi = sdge %>% filter(metric == 'saifi')
-sdge_caidi = sdge %>% filter(metric == 'caidi')
-
-median_saidi = rel_ca_averages %>% filter(metric == 'saidi')
-median_saifi = rel_ca_averages %>% filter(metric == 'saifi')
-median_caidi = rel_ca_averages %>% filter(metric == 'caidi')
-
-saidi_test = t.test(sdge_saidi$value, median_saidi$value)
-saifi_test = t.test(sdge_saifi$value, median_saifi$value)
-caidi_test = t.test(sdge_caidi$value, median_caidi$value)
-
-metric_df = data.frame(
-  `Metric Tested` = c('SAIDI', 'SAIFI', 'CAIDI'),
-  `SDGE Mean` = c(
-    mean(sdge_saidi$value),
-    mean(sdge_saifi$value),
-    mean(sdge_caidi$value)
-  ),
-  `CA Median Mean` = c(
-    mean(median_saidi$value),
-    mean(median_saifi$value),
-    mean(median_caidi$value)
-  ),
-  `P Value` = c(saidi_test$p.value, saifi_test$p.value, caidi_test$p.value)
-)
-
-gt(metric_df)
-```
-
-These statistical tests reinforce the conclusions drawn from the above visual.
 
 ### Final Fact-Check Status
 
@@ -486,8 +451,6 @@ ggplot(
 ```
 
 When we remove miniscule premium power services, we see that SDGE has been in the top 3 most expensive power companies in California since 2015 and has been the most expensive since 2020.
-
-I won't bother with a statistical test. The difference between the median and SDGE in the visualizations speaks for itself.
 
 ### Final Fact-Check Status
 
@@ -891,4 +854,3 @@ While PCF's claim about renewable energy is unequivocally true for the 2019 year
 However, PCF's claim about SDGE's GHG free energy use is unequivocally true. SDGE uses below average GHG free energy content than the CA average. Every year, without question, and non-negligibly. I actually think this is the more damning claim, as who cares about renewability if you continue to contribute to climate change anyway. Isn't that what this is all about?
 
 Something interesting to note, here, however, is that, on average, CA power content consists of more than 50% GHG free sources. That is laudable in and of itself.
-
